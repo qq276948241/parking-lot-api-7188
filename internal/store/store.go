@@ -7,6 +7,19 @@ import (
 	"time"
 )
 
+type Store interface {
+	AddMonthlyPlate(plate string)
+	RemoveMonthlyPlate(plate string) bool
+	IsMonthlyPlate(plate string) bool
+	GetMonthlyPlates() []string
+	GetParkingLot() *model.ParkingLot
+	Entry(record *model.ParkingRecord) error
+	GetActiveRecordByPlate(plate string) (*model.ParkingRecord, error)
+	Exit(recordID string, fee float64, exitTime time.Time) (*model.ParkingRecord, error)
+	GetActiveVehicles() []model.ParkingRecord
+	GetTodayPayments() []model.PaymentRecord
+}
+
 type MemoryStore struct {
 	mu              sync.RWMutex
 	records         map[string]*model.ParkingRecord

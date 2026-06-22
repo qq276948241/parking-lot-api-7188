@@ -14,11 +14,11 @@ import (
 )
 
 type Handler struct {
-	store   *store.MemoryStore
-	billing *service.BillingService
+	store   store.Store
+	billing service.Biller
 }
 
-func NewHandler(s *store.MemoryStore, b *service.BillingService) *Handler {
+func NewHandler(s store.Store, b service.Biller) *Handler {
 	return &Handler{store: s, billing: b}
 }
 

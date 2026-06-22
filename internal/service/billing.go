@@ -5,6 +5,10 @@ import (
 	"time"
 )
 
+type Biller interface {
+	CalculateFee(record *model.ParkingRecord, exitTime time.Time) float64
+}
+
 type PricingConfig struct {
 	TempHourlyRate      float64
 	TempDailyMax        float64
