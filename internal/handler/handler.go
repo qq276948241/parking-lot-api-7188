@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"parking-api/internal/model"
 	"parking-api/internal/service"
@@ -34,7 +35,10 @@ func writeError(w http.ResponseWriter, status int, msg string) {
 func WithMethod(method string, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != method {
-			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+			msg := fmt.Sprintf("method not allowed: got %s, want %s", r.Method, method)
+			log.Printf("[WARN] %s %s -> %s", r.Method, r.URL.Path, msg)
+			w.Header().Set("Allow", method)
+			writeError(w, http.StatusMethodNotAllowed, msg)
 			return
 		}
 		next(w, r)
