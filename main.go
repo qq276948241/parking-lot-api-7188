@@ -54,6 +54,30 @@ func main() {
 		h.ParkedVehicles(w, r)
 	})
 
+	mux.HandleFunc("/api/card/register", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		h.RegisterCard(w, r)
+	})
+
+	mux.HandleFunc("/api/card/renew", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		h.RenewCard(w, r)
+	})
+
+	mux.HandleFunc("/api/card/status", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		h.GetCard(w, r)
+	})
+
 	addr := ":8080"
 	fmt.Printf("停车场管理 API 服务启动，监听 %s\n", addr)
 	log.Fatal(http.ListenAndServe(addr, mux))

@@ -15,15 +15,17 @@ const (
 )
 
 type ParkingService struct {
-	mu          sync.RWMutex
-	vehicles    map[string]*model.VehicleRecord
-	incomes     []model.IncomeRecord
+	mu       sync.RWMutex
+	vehicles map[string]*model.VehicleRecord
+	incomes  []model.IncomeRecord
+	cards    map[string]*model.MonthlyCard
 }
 
 func NewParkingService() *ParkingService {
 	return &ParkingService{
 		vehicles: make(map[string]*model.VehicleRecord),
 		incomes:  make([]model.IncomeRecord, 0),
+		cards:    make(map[string]*model.MonthlyCard),
 	}
 }
 
@@ -39,6 +41,16 @@ func (s *ParkingService) VehicleEntry(plate string, carType model.CarType) (*mod
 	}
 	if carType != model.CarTypeTemp && carType != model.CarTypeMonthly {
 		return nil, ErrInvalidCarType
+	}
+
+	if carType == model.CarTypeMonthly {
+		card, exists := s.cards[plate]
+		if !exists {
+			return nil, ErrMonthlyCardNotFound
+		}
+		if !card.Active || time.Now().After(card.ExpireDate) {
+			return nil, ErrMonthlyCardExpired
+		}
 	}
 
 	record := &model.VehicleRecord{
@@ -140,4 +152,72 @@ func (s *ParkingService) GetParkedVehicles() []model.VehicleRecord {
 		result = append(result, *v)
 	}
 	return result
+}
+
+func (s *ParkingService) RegisterMonthlyCard(plate, ownerName string, months int) (*model.MonthlyCard, error) {
+	if months <= 0 {
+		return nil, ErrInvalidMonths
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if _, exists := s.cards[plate]; exists {
+		return nil, ErrMonthlyCardExists
+	}
+
+	now := time.Now()
+	startDate := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	expireDate := startDate.AddDate(0, months, 1)
+
+	card := &model.MonthlyCard{
+		LicensePlate: plate,
+		OwnerName:    ownerName,
+		StartDate:    startDate,
+		ExpireDate:   expireDate,
+		Active:       true,
+		CreatedAt:    now,
+	}
+	s.cards[plate] = card
+	return card, nil
+}
+
+func (s *ParkingService) RenewMonthlyCard(plate string, months int) (*model.MonthlyCard, error) {
+	if months <= 0 {
+		return nil, ErrInvalidMonths
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	card, exists := s.cards[plate]
+	if !exists {
+		return nil, ErrMonthlyCardNotFound
+	}
+
+	base := card.ExpireDate
+	now := time.Now()
+	if now.After(base) {
+		base = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	}
+	card.ExpireDate = base.AddDate(0, months, 0)
+	card.Active = true
+	return card, nil
+}
+
+func (s *ParkingService) GetMonthlyCard(plate string) (*model.MonthlyCard, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	card, exists := s.cards[plate]
+	if !exists {
+		return nil, ErrMonthlyCardNotFound
+	}
+
+	if card.Active && time.Now().After(card.ExpireDate) {
+		cardCopy := *card
+		cardCopy.Active = false
+		return &cardCopy, nil
+	}
+	return card, nil
 }

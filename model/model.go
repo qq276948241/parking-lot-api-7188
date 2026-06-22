@@ -43,6 +43,26 @@ type ExitResponse struct {
 	Fee          float64   `json:"fee"`
 }
 
+type MonthlyCard struct {
+	LicensePlate string    `json:"license_plate"`
+	OwnerName    string    `json:"owner_name"`
+	StartDate    time.Time `json:"start_date"`
+	ExpireDate   time.Time `json:"expire_date"`
+	Active       bool      `json:"active"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
+type MonthlyCardRegisterRequest struct {
+	LicensePlate string `json:"license_plate"`
+	OwnerName    string `json:"owner_name"`
+	Months       int    `json:"months"`
+}
+
+type MonthlyCardRenewRequest struct {
+	LicensePlate string `json:"license_plate"`
+	Months       int    `json:"months"`
+}
+
 type SpacesResponse struct {
 	Total      int `json:"total"`
 	Occupied   int `json:"occupied"`
