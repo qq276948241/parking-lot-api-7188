@@ -194,6 +194,63 @@ func (h *Handler) QueryVehicle(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+type MonthlyPlateRequest struct {
+	PlateNumber string `json:"plate_number"`
+	Action      string `json:"action"`
+}
+
+func (h *Handler) ManageMonthlyPlate(w http.ResponseWriter, r *http.Request) {
+	var req MonthlyPlateRequest
+	if err := decodeJSON(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if req.PlateNumber == "" {
+		writeError(w, http.StatusBadRequest, "plate_number is required")
+		return
+	}
+
+	if req.Action == "" {
+		writeError(w, http.StatusBadRequest, "action is required (add or remove)")
+		return
+	}
+
+	switch req.Action {
+	case "add":
+		if h.store.IsMonthlyPlate(req.PlateNumber) {
+			writeError(w, http.StatusConflict, "plate already in monthly list")
+			return
+		}
+		h.store.AddMonthlyPlate(req.PlateNumber)
+		writeJSON(w, http.StatusOK, map[string]interface{}{
+			"plate_number": req.PlateNumber,
+			"action":       "add",
+			"message":      "monthly plate added",
+		})
+	case "remove":
+		if !h.store.RemoveMonthlyPlate(req.PlateNumber) {
+			writeError(w, http.StatusNotFound, "plate not found in monthly list")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]interface{}{
+			"plate_number": req.PlateNumber,
+			"action":       "remove",
+			"message":      "monthly plate removed",
+		})
+	default:
+		writeError(w, http.StatusBadRequest, "invalid action, must be add or remove")
+	}
+}
+
+func (h *Handler) ListMonthlyPlates(w http.ResponseWriter, r *http.Request) {
+	plates := h.store.GetMonthlyPlates()
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"count":  len(plates),
+		"plates": plates,
+	})
+}
+
 func fmtDuration(d time.Duration) string {
 	d = d.Round(time.Second)
 	h := d / time.Hour

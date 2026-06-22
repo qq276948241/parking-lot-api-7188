@@ -38,6 +38,26 @@ func (s *MemoryStore) IsMonthlyPlate(plate string) bool {
 	return s.monthlyPlates[plate]
 }
 
+func (s *MemoryStore) RemoveMonthlyPlate(plate string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if !s.monthlyPlates[plate] {
+		return false
+	}
+	delete(s.monthlyPlates, plate)
+	return true
+}
+
+func (s *MemoryStore) GetMonthlyPlates() []string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	plates := make([]string, 0, len(s.monthlyPlates))
+	for p := range s.monthlyPlates {
+		plates = append(plates, p)
+	}
+	return plates
+}
+
 func (s *MemoryStore) GetParkingLot() *model.ParkingLot {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

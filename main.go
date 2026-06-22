@@ -27,6 +27,8 @@ func main() {
 	mux.HandleFunc("/api/vehicle/query", handler.WithMethod(http.MethodGet, h.QueryVehicle))
 	mux.HandleFunc("/api/admin/active-vehicles", handler.WithMethod(http.MethodGet, h.ActiveVehicles))
 	mux.HandleFunc("/api/admin/today-income", handler.WithMethod(http.MethodGet, h.TodayIncome))
+	mux.HandleFunc("/api/admin/monthly-plates", handler.WithMethod(http.MethodPost, h.ManageMonthlyPlate))
+	mux.HandleFunc("/api/admin/monthly-plates/list", handler.WithMethod(http.MethodGet, h.ListMonthlyPlates))
 
 	addr := ":8080"
 	fmt.Printf("Parking API server starting on %s\n", addr)
@@ -37,6 +39,8 @@ func main() {
 	fmt.Println("  GET    /api/vehicle/query               - 按车牌号查询车辆状态")
 	fmt.Println("  GET    /api/admin/active-vehicles    - 在场车辆列表")
 	fmt.Println("  GET    /api/admin/today-income       - 当日收入流水")
+	fmt.Println("  POST   /api/admin/monthly-plates     - 添加/删除月卡车牌")
+	fmt.Println("  GET    /api/admin/monthly-plates/list - 月卡车牌列表")
 
 	if err := http.ListenAndServe(addr, mux); err != nil {
 		log.Fatal(err)
