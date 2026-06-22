@@ -9,8 +9,12 @@ import (
 )
 
 func main() {
-	svc := service.NewParkingService()
-	h := handler.NewParkingHandler(svc)
+	cardSvc := service.NewCardService()
+	billingSvc := service.NewBillingService()
+	parkingSvc := service.NewParkingService(cardSvc, billingSvc)
+
+	parkingH := handler.NewParkingHandler(parkingSvc)
+	cardH := handler.NewCardHandler(cardSvc)
 
 	mux := http.NewServeMux()
 
@@ -19,7 +23,7 @@ func main() {
 			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		h.Entry(w, r)
+		parkingH.Entry(w, r)
 	})
 
 	mux.HandleFunc("/api/exit", func(w http.ResponseWriter, r *http.Request) {
@@ -27,7 +31,7 @@ func main() {
 			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		h.Exit(w, r)
+		parkingH.Exit(w, r)
 	})
 
 	mux.HandleFunc("/api/spaces", func(w http.ResponseWriter, r *http.Request) {
@@ -35,7 +39,7 @@ func main() {
 			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		h.Spaces(w, r)
+		parkingH.Spaces(w, r)
 	})
 
 	mux.HandleFunc("/api/admin/income", func(w http.ResponseWriter, r *http.Request) {
@@ -43,7 +47,7 @@ func main() {
 			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		h.TodayIncomes(w, r)
+		parkingH.TodayIncomes(w, r)
 	})
 
 	mux.HandleFunc("/api/admin/vehicles", func(w http.ResponseWriter, r *http.Request) {
@@ -51,7 +55,7 @@ func main() {
 			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		h.ParkedVehicles(w, r)
+		parkingH.ParkedVehicles(w, r)
 	})
 
 	mux.HandleFunc("/api/card/register", func(w http.ResponseWriter, r *http.Request) {
@@ -59,7 +63,7 @@ func main() {
 			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		h.RegisterCard(w, r)
+		cardH.RegisterCard(w, r)
 	})
 
 	mux.HandleFunc("/api/card/renew", func(w http.ResponseWriter, r *http.Request) {
@@ -67,7 +71,7 @@ func main() {
 			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		h.RenewCard(w, r)
+		cardH.RenewCard(w, r)
 	})
 
 	mux.HandleFunc("/api/card/status", func(w http.ResponseWriter, r *http.Request) {
@@ -75,7 +79,7 @@ func main() {
 			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		h.GetCard(w, r)
+		cardH.GetCard(w, r)
 	})
 
 	addr := ":8080"
