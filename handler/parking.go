@@ -31,9 +31,6 @@ func (h *ParkingHandler) Entry(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, model.Response{Code: 400, Message: "车牌号不能为空"})
 		return
 	}
-	if req.CarType == "" {
-		req.CarType = model.CarTypeTemp
-	}
 
 	record, err := h.svc.VehicleEntry(req.LicensePlate, req.CarType)
 	if err != nil {

@@ -35,6 +35,13 @@ func (s *ParkingService) VehicleEntry(plate string, carType model.CarType) (*mod
 	if len(s.vehicles) >= TotalSpaces {
 		return nil, ErrNoSpace
 	}
+	if carType == "" || carType == model.CarTypeTemp {
+		if s.cardSvc.IsCardValid(plate) {
+			carType = model.CarTypeMonthly
+		} else if carType == "" {
+			carType = model.CarTypeTemp
+		}
+	}
 	if carType != model.CarTypeTemp && carType != model.CarTypeMonthly {
 		return nil, ErrInvalidCarType
 	}
@@ -66,13 +73,18 @@ func (s *ParkingService) VehicleExit(plate string) (*model.ExitResponse, error) 
 		return nil, ErrVehicleNotFound
 	}
 
-	durationMin, fee := s.billingSvc.CalculateFee(record.CarType, record.EntryTime)
+	carType := record.CarType
+	if carType == model.CarTypeTemp && s.cardSvc.IsCardValid(plate) {
+		carType = model.CarTypeMonthly
+	}
+
+	durationMin, fee := s.billingSvc.CalculateFee(carType, record.EntryTime)
 	now := time.Now()
 	delete(s.vehicles, plate)
 
 	income := model.IncomeRecord{
 		LicensePlate: plate,
-		CarType:      record.CarType,
+		CarType:      carType,
 		EntryTime:    record.EntryTime,
 		ExitTime:     now,
 		DurationMin:  durationMin,
@@ -83,7 +95,7 @@ func (s *ParkingService) VehicleExit(plate string) (*model.ExitResponse, error) 
 
 	return &model.ExitResponse{
 		LicensePlate: plate,
-		CarType:      record.CarType,
+		CarType:      carType,
 		EntryTime:    record.EntryTime,
 		ExitTime:     now,
 		DurationMin:  durationMin,
