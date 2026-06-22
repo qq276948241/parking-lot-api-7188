@@ -31,23 +31,32 @@ func writeError(w http.ResponseWriter, status int, msg string) {
 	writeJSON(w, status, map[string]string{"error": msg})
 }
 
+func WithMethod(method string, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != method {
+			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+			return
+		}
+		next(w, r)
+	}
+}
+
+func decodeJSON(r *http.Request, v interface{}) error {
+	defer r.Body.Close()
+	return json.NewDecoder(r.Body).Decode(v)
+}
+
 type EntryRequest struct {
 	PlateNumber string           `json:"plate_number"`
 	VehicleType model.VehicleType `json:"vehicle_type"`
 }
 
 func (h *Handler) Entry(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
-		return
-	}
-
 	var req EntryRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSON(r, &req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	defer r.Body.Close()
 
 	if req.PlateNumber == "" {
 		writeError(w, http.StatusBadRequest, "plate_number is required")
@@ -84,17 +93,11 @@ type ExitRequest struct {
 }
 
 func (h *Handler) Exit(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
-		return
-	}
-
 	var req ExitRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSON(r, &req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	defer r.Body.Close()
 
 	if req.PlateNumber == "" {
 		writeError(w, http.StatusBadRequest, "plate_number is required")
@@ -128,11 +131,6 @@ func (h *Handler) Exit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) ParkingLotStatus(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
-		return
-	}
-
 	status := h.store.GetParkingLot()
 	remaining := status.TotalSpots - status.OccupiedSpots
 	writeJSON(w, http.StatusOK, map[string]interface{}{
@@ -143,11 +141,6 @@ func (h *Handler) ParkingLotStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) ActiveVehicles(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
-		return
-	}
-
 	vehicles := h.store.GetActiveVehicles()
 	if vehicles == nil {
 		vehicles = []model.ParkingRecord{}
@@ -156,11 +149,6 @@ func (h *Handler) ActiveVehicles(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) TodayIncome(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
-		return
-	}
-
 	payments := h.store.GetTodayPayments()
 	var total float64
 	for _, p := range payments {
@@ -176,11 +164,6 @@ func (h *Handler) TodayIncome(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) QueryVehicle(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
-		return
-	}
-
 	plate := r.URL.Query().Get("plate_number")
 	if plate == "" {
 		writeError(w, http.StatusBadRequest, "plate_number is required")

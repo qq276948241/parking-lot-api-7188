@@ -21,12 +21,12 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/api/entry", h.Entry)
-	mux.HandleFunc("/api/exit", h.Exit)
-	mux.HandleFunc("/api/parking/status", h.ParkingLotStatus)
-	mux.HandleFunc("/api/vehicle/query", h.QueryVehicle)
-	mux.HandleFunc("/api/admin/active-vehicles", h.ActiveVehicles)
-	mux.HandleFunc("/api/admin/today-income", h.TodayIncome)
+	mux.HandleFunc("/api/entry", handler.WithMethod(http.MethodPost, h.Entry))
+	mux.HandleFunc("/api/exit", handler.WithMethod(http.MethodPost, h.Exit))
+	mux.HandleFunc("/api/parking/status", handler.WithMethod(http.MethodGet, h.ParkingLotStatus))
+	mux.HandleFunc("/api/vehicle/query", handler.WithMethod(http.MethodGet, h.QueryVehicle))
+	mux.HandleFunc("/api/admin/active-vehicles", handler.WithMethod(http.MethodGet, h.ActiveVehicles))
+	mux.HandleFunc("/api/admin/today-income", handler.WithMethod(http.MethodGet, h.TodayIncome))
 
 	addr := ":8080"
 	fmt.Printf("Parking API server starting on %s\n", addr)
