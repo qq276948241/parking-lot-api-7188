@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"parking-api/internal/model"
 	"parking-api/internal/service"
@@ -172,4 +173,52 @@ func (h *Handler) TodayIncome(w http.ResponseWriter, r *http.Request) {
 		"count":    len(payments),
 		"payments": payments,
 	})
+}
+
+func (h *Handler) QueryVehicle(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	plate := r.URL.Query().Get("plate_number")
+	if plate == "" {
+		writeError(w, http.StatusBadRequest, "plate_number is required")
+		return
+	}
+
+	record, err := h.store.GetActiveRecordByPlate(plate)
+	if err != nil {
+		writeJSON(w, http.StatusOK, map[string]interface{}{
+			"plate_number":  plate,
+			"is_in_parking": false,
+		})
+		return
+	}
+
+	duration := time.Since(record.EntryTime)
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"plate_number":   record.PlateNumber,
+		"is_in_parking":  true,
+		"vehicle_type":   record.VehicleType,
+		"entry_time":     record.EntryTime,
+		"duration_min":   duration.Minutes(),
+		"duration_human": fmtDuration(duration),
+	})
+}
+
+func fmtDuration(d time.Duration) string {
+	d = d.Round(time.Second)
+	h := d / time.Hour
+	d -= h * time.Hour
+	m := d / time.Minute
+	d -= m * time.Minute
+	s := d / time.Second
+	if h > 0 {
+		return fmt.Sprintf("%d小时%d分%d秒", h, m, s)
+	}
+	if m > 0 {
+		return fmt.Sprintf("%d分%d秒", m, s)
+	}
+	return fmt.Sprintf("%d秒", s)
 }
